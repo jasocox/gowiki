@@ -4,9 +4,12 @@ import (
   "fmt"
   "net/http"
   "html/template"
+  "gowiki/wiki"
 )
 
-type Server struct {}
+// Wiki Model
+const pages = "pages/"
+var gowiki = wiki.Wiki(pages)
 
 // Wiki View
 const views = "view/"
@@ -14,8 +17,10 @@ const mainView = "main.html"
 
 var templates = template.Must(template.ParseFiles(views + mainView))
 
+type Server struct {}
+
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-  err := templates.ExecuteTemplate(w, mainView, nil)
+  err := templates.ExecuteTemplate(w, mainView, gowiki)
   if err != nil {
     http.Error(w, err.Error(), http.StatusInternalServerError)
   }
