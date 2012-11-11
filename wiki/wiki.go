@@ -1,6 +1,9 @@
 package wiki
 
-import "os"
+import (
+  "os"
+  "errors"
+)
 
 const pages = "pages/"
 
@@ -14,9 +17,13 @@ type Page struct {
 }
 
 func init() {
-  _, err := os.Stat(pages)
+  fi, err := os.Stat(pages)
   if err != nil {
     panic(err)
+  }
+
+  if !fi.IsDir() {
+    panic(errors.New("Wiki storage location is not a directory: " + pages))
   }
 }
 
