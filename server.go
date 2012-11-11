@@ -8,6 +8,7 @@ import (
 )
 
 // Wiki Model
+var gowiki = new(wiki.GoWiki)
 
 // Wiki View
 const views = "view/"
@@ -18,13 +19,17 @@ var templates = template.Must(template.ParseFiles(views + mainView))
 type Server struct {}
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-  wikiPages, err := wiki.Wiki()
+  if r.URL.Path != "/" {
+    return
+  }
+
+  pageList, err := gowiki.PageList()
   if err != nil {
     http.Error(w, err.Error(), http.StatusInternalServerError)
     return
   }
 
-  err = templates.ExecuteTemplate(w, mainView, wikiPages)
+  err = templates.ExecuteTemplate(w, mainView, pageList)
   if err != nil {
     http.Error(w, err.Error(), http.StatusInternalServerError)
     return

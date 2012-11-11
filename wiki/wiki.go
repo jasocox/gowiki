@@ -8,11 +8,9 @@ import (
 
 const pages = "pages/"
 
-type GoWiki struct {
-  Pages []Page
-}
+type GoWiki struct { }
 
-type Page struct {
+type WikiPage struct {
   Title string
   Body string
 }
@@ -28,7 +26,7 @@ func init() {
   }
 }
 
-func Wiki() (*GoWiki, error) {
+func (gw GoWiki) PageList() ([]WikiPage, error) {
   pageDir, err := os.Open(pages)
   if err != nil {
     return nil, err
@@ -43,5 +41,5 @@ func Wiki() (*GoWiki, error) {
     fmt.Println("Wiki page file: " + pages + wikiList[page])
   }
 
-  return &GoWiki{Pages: []Page{Page{"page1", "Page 1"}, Page{"page2", "Page 2"}}}, nil
+  return []WikiPage{WikiPage{"page1", ""}, WikiPage{"page2", ""}}, nil
 }
