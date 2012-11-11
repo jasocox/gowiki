@@ -8,8 +8,7 @@ import (
 )
 
 // Wiki Model
-const pages = "pages/"
-var gowiki = wiki.Wiki(pages)
+var gowiki = wiki.Wiki()
 
 // Wiki View
 const views = "view/"

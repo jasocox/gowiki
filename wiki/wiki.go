@@ -1,5 +1,9 @@
 package wiki
 
+import "os"
+
+const pages = "pages/"
+
 type GoWiki struct {
   Pages []Page
 }
@@ -9,8 +13,13 @@ type Page struct {
   Body string
 }
 
-func Wiki(pages string) GoWiki {
-  gw := GoWiki{Pages: []Page{Page{"page1", "Page 1"}, Page{"page2", "Page 2"}}}
+func init() {
+  _, err := os.Stat(pages)
+  if err != nil {
+    panic(err)
+  }
+}
 
-  return gw
+func Wiki() GoWiki {
+  return GoWiki{Pages: []Page{Page{"page1", "Page 1"}, Page{"page2", "Page 2"}}}
 }
