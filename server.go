@@ -1,7 +1,7 @@
 package main
 
 import (
-  "fmt"
+  "log"
   "net/http"
   "html/template"
   "gowiki/wiki"
@@ -20,6 +20,8 @@ type Server struct {}
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
   if r.URL.Path != "/" {
+    log.Println("Invalid Path: " + r.URL.Path)
+    http.Error(w, "Not Found", http.StatusNotFound)
     return
   }
 
@@ -39,7 +41,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 // Server
 func main() {
   s := new(Server)
-  fmt.Println("Starting Server...")
+  log.Println("Starting Server...")
 
   http.ListenAndServe(":8080", s)
 }
