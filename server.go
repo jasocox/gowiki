@@ -7,18 +7,16 @@ import (
   "gowiki/wiki"
 )
 
-// Wiki Model
-var gowiki = new(wiki.GoWiki)
+type GoWikiServer struct {
+  *wiki.GoWiki
+}
 
-// Wiki View
 const views = "view/"
 const mainView = "main.html"
 
 var templates = template.Must(template.ParseFiles(views + mainView))
 
-type Server struct {}
-
-func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (s *GoWikiServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
   if r.URL.Path != "/" {
     log.Println("Invalid Path: " + r.URL.Path)
     http.Error(w, "Not Found", http.StatusNotFound)
@@ -27,7 +25,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
   log.Println("Serving request for " + r.URL.Path)
 
-  pageList, err := gowiki.PageList()
+  pageList, err := s.PageList()
   if err != nil {
     http.Error(w, err.Error(), http.StatusInternalServerError)
     return
@@ -40,9 +38,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
   }
 }
 
-// Server
 func main() {
-  s := new(Server)
+  s := new(GoWikiServer)
   log.Println("Starting Server...")
 
   http.ListenAndServe(":8080", s)
