@@ -25,6 +25,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
     return
   }
 
+  log.Println("Serving request for " + r.URL.Path)
+
   pageList, err := gowiki.PageList()
   if err != nil {
     http.Error(w, err.Error(), http.StatusInternalServerError)

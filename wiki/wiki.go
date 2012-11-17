@@ -1,7 +1,6 @@
 package wiki
 
 import (
-  "fmt"
   "regexp"
   "log"
   "os"
@@ -47,9 +46,8 @@ func (gw GoWiki) PageList() (wp []WikiPage, err error) {
       log.Println(err)
       continue
     }
-    fmt.Println("Wiki page title: " + title)
+    wp = append(wp, WikiPage{title, ""})
   }
-  wp = []WikiPage{WikiPage{"page1", ""}, WikiPage{"page2", ""}}
 
   return wp, nil
 }
@@ -57,7 +55,6 @@ func (gw GoWiki) PageList() (wp []WikiPage, err error) {
 func pageTitle(file string) (name string, err error) {
   if validWikiFile.MatchString(file) {
     name = wikiTitleRegexp.FindString(file)
-    fmt.Println("name: " + name)
   } else {
     err = errors.New("Invalid wiki: " + file)
   }
