@@ -52,6 +52,10 @@ func (gw GoWiki) PageList() (wp []WikiPage, err error) {
   return wp, nil
 }
 
+func (gw GoWiki) GetWiki(title string) (wp WikiPage, err error) {
+  return
+}
+
 func pageTitle(file string) (name string, err error) {
   if validWikiFile.MatchString(file) {
     name = wikiTitleRegexp.FindString(file)
