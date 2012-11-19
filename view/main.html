@@ -2,7 +2,7 @@
   <h1>Go Wiki</h1>
   <ul class="list">
     {{range .}}
-    <li class="page">{{.Title}}</li>
+    <li class="page link"><a href="/wiki/{{.Title}}">{{.Title}}</a></li>
     {{end}}
   </ul>
 </div>
