@@ -4,6 +4,7 @@ import (
   "regexp"
   "log"
   "os"
+  "io/ioutil"
   "errors"
 )
 
@@ -55,6 +56,11 @@ func (gw GoWiki) PageList() (wp []WikiPage, err error) {
 }
 
 func (gw GoWiki) GetWiki(title string) (wp WikiPage, err error) {
+  body, err := ioutil.ReadFile(pages + title + ".txt")
+  wp.Title = title
+  wp.Body = string(body)
+  log.Println("Wiki body: " + wp.Body)
+
   return
 }
 
