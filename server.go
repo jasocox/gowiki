@@ -14,9 +14,11 @@ type GoWikiServer struct {
   *wiki.GoWiki
 }
 
-const views = "view/"
-const mainView = "main.html"
-const wikiView = "wiki.html"
+const (
+  views = "view/"
+  mainView = "main.html"
+  wikiView = "wiki.html"
+)
 
 var (
   templates = template.Must(template.ParseFiles(views + mainView, views + wikiView))
@@ -25,9 +27,11 @@ var (
 )
 
 func (s *GoWikiServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-  var templateData interface{}
-  var templateView string
-  var err error
+  var (
+    templateData interface{}
+    templateView string
+    err error
+  )
 
   log.Println("Serving request for " + r.URL.Path)
 

@@ -8,8 +8,10 @@ import (
 )
 
 const pages = "pages/"
-var validWikiFile = regexp.MustCompile("^[^/.]+[.]txt$")
-var wikiTitleRegexp = regexp.MustCompile("[^.]+")
+var (
+  validWikiFile = regexp.MustCompile("^[^/.]+[.]txt$")
+  wikiTitleRegexp = regexp.MustCompile("[^.]+")
+)
 
 type GoWiki struct { }
 
