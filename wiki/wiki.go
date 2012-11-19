@@ -33,18 +33,13 @@ func init() {
 }
 
 func (gw GoWiki) PageList() (wp []WikiPage, err error) {
-  pageDir, err := os.Open(pages)
-  if err != nil {
-    return
-  }
-
-  wikiList, err := pageDir.Readdirnames(0)
+  wikiList, err := ioutil.ReadDir(pages)
   if err != nil {
     return
   }
 
   for page := range wikiList {
-    title, err := pageTitle(wikiList[page])
+    title, err := pageTitle(wikiList[page].Name())
     if err != nil {
       log.Println(err)
       continue
