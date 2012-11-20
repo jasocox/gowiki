@@ -46,10 +46,15 @@ func (s *GoWikiServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
     log.Println("Request for wiki page: " + wikiTitle)
 
     templateData, err = s.GetWiki(wikiTitle)
+
+    if err != nil {
+      log.Println("Page doesn't exist. Creating it?")
+      http.Redirect(w, r, "/edit/" + wikiTitle, http.StatusFound)
+    }
   case validWikiUrl.MatchString(r.URL.Path) && r.Method == "POST":
     templateView = wikiView
     wikiTitle := getWikiTitle(r.URL.Path)
-    log.Println("Request for wiki page: " + wikiTitle)
+    log.Println("Edited wiki page: " + wikiTitle)
 
     wikiBody := r.FormValue("body")
     templateData, err = s.CreateWiki(wikiTitle, wikiBody)
