@@ -17,11 +17,15 @@ const (
   views = "view/"
   mainView = "main.html"
   wikiView = "wiki.html"
+  editView = "edit.html"
 )
 
 var (
-  templates = template.Must(template.ParseFiles(views + mainView, views + wikiView))
+  templates = template.Must(template.ParseFiles(views + mainView,
+                                                views + wikiView,
+                                                views + editView))
   validWikiUrl = regexp.MustCompile("^/wiki/[^/.]+$")
+  validEditUrl = regexp.MustCompile("^/edit/[^/.]+$")
   getTitleRegExp = regexp.MustCompile("[^/.]+$")
 )
 
@@ -56,6 +60,12 @@ func (s *GoWikiServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
     if err != nil && status != 0 {
       status = http.StatusInternalServerError
     }
+  case validEditUrl.MatchString(r.URL.Path):
+    templateView = editView
+    wikiTitle := getWikiTitle(r.URL.Path)
+    log.Println("Edit page: " + wikiTitle)
+
+    templateData, _ = s.GetWiki(wikiTitle)
   case r.URL.Path == "/":
     templateView = mainView
     templateData, err = s.PageList()
