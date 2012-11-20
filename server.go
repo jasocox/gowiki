@@ -3,6 +3,7 @@ package main
 import (
   "regexp"
   "log"
+  "errors"
   "net/http"
   "html/template"
   "gowiki/wiki"
@@ -29,6 +30,7 @@ func (s *GoWikiServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
     templateData interface{}
     templateView string
     err error
+    status int
   )
 
   log.Println("Serving request for " + r.URL.Path)
@@ -39,25 +41,38 @@ func (s *GoWikiServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
     wikiTitle := getWikiTitle(r.URL.Path)
     log.Println("Request for wiki page: " + wikiTitle)
 
-    if r.Method == "GET" {
+    switch r.Method {
+    case "GET":
       templateData, err = s.GetWiki(wikiTitle)
+    default:
+      err = errors.New("Method Not Allowed")
+      status = http.StatusMethodNotAllowed
+      log.Println("Attempt to " + r.Method + " to /wiki")
+    }
+
+    if err != nil && status != 0 {
+      status = http.StatusInternalServerError
     }
   case r.URL.Path == "/":
     templateView = mainView
     templateData, err = s.PageList()
+
+    if err != nil {
+      log.Println("Failure to generate list of wiki pages")
+      status = http.StatusInternalServerError
+    }
   default:
     log.Println("Invalid Path: " + r.URL.Path)
-    http.Error(w, "Not Found", http.StatusNotFound)
-    return
+    err = errors.New("Not Found")
+    status = http.StatusNotFound
   }
 
-  if err == nil {
-    err = templates.ExecuteTemplate(w, templateView, templateData)
-  }
-
-  if err != nil {
+  if (err != nil) && (status == 0) {
     http.Error(w, err.Error(), http.StatusInternalServerError)
-    return
+  } else if err != nil {
+    http.Error(w, err.Error(), status)
+  } else {
+    err = templates.ExecuteTemplate(w, templateView, templateData)
   }
 }
 
