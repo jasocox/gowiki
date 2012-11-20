@@ -1,6 +1,7 @@
 package wiki
 
 import (
+  "strings"
   "regexp"
   "log"
   "os"
@@ -53,7 +54,7 @@ func (gw GoWiki) PageList() (wp []WikiPage, err error) {
 func (gw GoWiki) GetWiki(title string) (wp WikiPage, err error) {
   body, err := ioutil.ReadFile(pages + title + ".txt")
   wp.Title = title
-  wp.Body = string(body)
+  wp.Body = strings.TrimSpace(string(body))
 
   return
 }
@@ -61,7 +62,7 @@ func (gw GoWiki) GetWiki(title string) (wp WikiPage, err error) {
 func (gw GoWiki) CreateWiki(title string, body string) (wp WikiPage, err error) {
   log.Println("New wiki body: " + body)
   wp.Title = title
-  wp.Body = body
+  wp.Body = strings.TrimSpace(body)
 
   err = ioutil.WriteFile(pages + title + ".txt", []byte(body), 0600)
 

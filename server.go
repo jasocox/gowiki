@@ -40,25 +40,24 @@ func (s *GoWikiServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
   log.Println("Serving request for " + r.URL.Path)
 
   switch {
-  case validWikiUrl.MatchString(r.URL.Path):
+  case validWikiUrl.MatchString(r.URL.Path) && r.Method == "GET":
     templateView = wikiView
     wikiTitle := getWikiTitle(r.URL.Path)
     log.Println("Request for wiki page: " + wikiTitle)
 
-    switch r.Method {
-    case "GET":
-      templateData, err = s.GetWiki(wikiTitle)
-    case "POST":
-      wikiBody := r.FormValue("body")
-      templateData, err = s.CreateWiki(wikiTitle, wikiBody)
-    default:
-      err = errors.New("Method Not Allowed")
-      status = http.StatusMethodNotAllowed
-      log.Println("Attempt to " + r.Method + " to /wiki")
-    }
+    templateData, err = s.GetWiki(wikiTitle)
+  case validWikiUrl.MatchString(r.URL.Path) && r.Method == "POST":
+    templateView = wikiView
+    wikiTitle := getWikiTitle(r.URL.Path)
+    log.Println("Request for wiki page: " + wikiTitle)
 
-    if err != nil && status != 0 {
-      status = http.StatusInternalServerError
+    wikiBody := r.FormValue("body")
+    templateData, err = s.CreateWiki(wikiTitle, wikiBody)
+
+    if err == nil {
+      r.Method = "GET"
+      http.Redirect(w, r, "/wiki/" + wikiTitle, http.StatusFound)
+      return
     }
   case validEditUrl.MatchString(r.URL.Path):
     templateView = editView
@@ -69,11 +68,6 @@ func (s *GoWikiServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
   case r.URL.Path == "/":
     templateView = mainView
     templateData, err = s.PageList()
-
-    if err != nil {
-      log.Println("Failure to generate list of wiki pages")
-      status = http.StatusInternalServerError
-    }
   default:
     log.Println("Invalid Path: " + r.URL.Path)
     err = errors.New("Not Found")
