@@ -54,7 +54,16 @@ func (gw GoWiki) GetWiki(title string) (wp WikiPage, err error) {
   body, err := ioutil.ReadFile(pages + title + ".txt")
   wp.Title = title
   wp.Body = string(body)
-  log.Println("Wiki body: " + wp.Body)
+
+  return
+}
+
+func (gw GoWiki) CreateWiki(title string, body string) (wp WikiPage, err error) {
+  log.Println("New wiki body: " + body)
+  wp.Title = title
+  wp.Body = body
+
+  err = ioutil.WriteFile(pages + title + ".txt", []byte(body), 0600)
 
   return
 }

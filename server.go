@@ -44,6 +44,9 @@ func (s *GoWikiServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
     switch r.Method {
     case "GET":
       templateData, err = s.GetWiki(wikiTitle)
+    case "POST":
+      wikiBody := r.FormValue("body")
+      templateData, err = s.CreateWiki(wikiTitle, wikiBody)
     default:
       err = errors.New("Method Not Allowed")
       status = http.StatusMethodNotAllowed
