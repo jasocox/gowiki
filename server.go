@@ -1,10 +1,8 @@
 package main
 
 import (
-  "strings"
   "regexp"
   "log"
-  "errors"
   "net/http"
   "html/template"
   "gowiki/wiki"
@@ -22,7 +20,7 @@ const (
 
 var (
   templates = template.Must(template.ParseFiles(views + mainView, views + wikiView))
-  validTitleRegExp = regexp.MustCompile("^/wiki/[^/.]+$")
+  validWikiUrl = regexp.MustCompile("^/wiki/[^/.]+$")
   getTitleRegExp = regexp.MustCompile("[^/.]+$")
 )
 
@@ -36,14 +34,12 @@ func (s *GoWikiServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
   log.Println("Serving request for " + r.URL.Path)
 
   switch {
-  case strings.HasPrefix(r.URL.Path, "/wiki"):
+  case validWikiUrl.MatchString(r.URL.Path):
     templateView = wikiView
     wikiTitle := getWikiTitle(r.URL.Path)
     log.Println("Request for wiki page: " + wikiTitle)
 
-    if wikiTitle == "" {
-      err = errors.New("Invalid Path to wiki")
-    } else {
+    if r.Method == "GET" {
       templateData, err = s.GetWiki(wikiTitle)
     }
   case r.URL.Path == "/":
@@ -66,9 +62,7 @@ func (s *GoWikiServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func getWikiTitle(path string) (title string) {
-  if validTitleRegExp.MatchString(path) {
-    title = getTitleRegExp.FindString(path)
-  }
+  title = getTitleRegExp.FindString(path)
 
   return
 }
