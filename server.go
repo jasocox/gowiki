@@ -67,13 +67,7 @@ func ServeWiki(w http.ResponseWriter, r *http.Request) {
     status = http.StatusNotFound
   }
 
-  if (err != nil) && (status == 0) {
-    http.Error(w, err.Error(), http.StatusInternalServerError)
-  } else if err != nil {
-    http.Error(w, err.Error(), status)
-  } else {
-    err = templates.ExecuteTemplate(w, templateView, templateData)
-  }
+  handleErrorOrTemplate(w, templateData, templateView, err, status)
 }
 
 func ServeEdit(w http.ResponseWriter, r *http.Request) {
@@ -95,13 +89,7 @@ func ServeEdit(w http.ResponseWriter, r *http.Request) {
     templateData, err = gowiki.CreateWiki(wikiTitle)
   }
 
-  if (err != nil) && (status == 0) {
-    http.Error(w, err.Error(), http.StatusInternalServerError)
-  } else if err != nil {
-    http.Error(w, err.Error(), status)
-  } else {
-    err = templates.ExecuteTemplate(w, templateView, templateData)
-  }
+  handleErrorOrTemplate(w, templateData, templateView, err, status)
 }
 
 func ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -123,13 +111,7 @@ func ServeHTTP(w http.ResponseWriter, r *http.Request) {
     status = http.StatusNotFound
   }
 
-  if (err != nil) && (status == 0) {
-    http.Error(w, err.Error(), http.StatusInternalServerError)
-  } else if err != nil {
-    http.Error(w, err.Error(), status)
-  } else {
-    err = templates.ExecuteTemplate(w, templateView, templateData)
-  }
+  handleErrorOrTemplate(w, templateData, templateView, err, status)
 }
 
 func getWikiTitle(path string) (title string) {
@@ -138,6 +120,19 @@ func getWikiTitle(path string) (title string) {
   return
 }
 
+func handleErrorOrTemplate(w http.ResponseWriter,
+                           templateData interface{},
+                           templateView string,
+                           err error,
+                           status int) {
+  if (err != nil) && (status == 0) {
+    http.Error(w, err.Error(), http.StatusInternalServerError)
+  } else if err != nil {
+    http.Error(w, err.Error(), status)
+  } else {
+    err = templates.ExecuteTemplate(w, templateView, templateData)
+  }
+}
 
 func main() {
   gowiki = new(wiki.GoWiki)
