@@ -4,69 +4,66 @@ import (
   "strings"
   "regexp"
   "log"
-  "os"
-  "io/ioutil"
   "errors"
+  "labix.org/v2/mgo"
+  "labix.org/v2/mgo/bson"
 )
 
-const pages = "pages/"
+const (
+  dataURLs = "localhost"
+  databaseID = "test"
+  collectionID = "main"
+)
+
 var (
-  validWikiFile = regexp.MustCompile("^[^/.]+[.]txt$")
+  session *mgo.Session
+  database *mgo.Database
+  mainWiki *mgo.Collection
   wikiTitleRegexp = regexp.MustCompile("[^.]+")
 )
 
 func init() {
-  fi, err := os.Stat(pages)
+  var err error
+
+  session, err = mgo.Dial(dataURLs)
   if err != nil {
     panic(err)
   }
 
-  if !fi.IsDir() {
-    log.Fatal(errors.New("Wiki storage location is not a directory: " + pages))
-  }
+  database = session.DB(databaseID)
+  mainWiki = database.C(collectionID)
 }
 
 func getPageList() (wps []WikiPage, err error) {
-  wikiList, err := ioutil.ReadDir(pages)
+  err = mainWiki.Find(nil).All(&wps)
   if err != nil {
-    return
-  }
-
-  for page := range wikiList {
-    title, err := pageTitle(wikiList[page].Name())
-    if err != nil {
-      log.Println(err)
-      continue
-    }
-    wps = append(wps, WikiPage{title, ""})
+    log.Println(err.Error())
+    err = errors.New("Problems getting wiki list")
   }
 
   return
 }
 
 func getWiki(title string) (wp WikiPage, err error) {
-  body, err := ioutil.ReadFile(pages + title + ".txt")
-
-  wp.Title = title
-  wp.Body = strings.TrimSpace(string(body))
+  err = mainWiki.Find(bson.M{"title": title}).One(&wp)
+  if err != nil {
+    log.Println(err.Error())
+    err = errors.New("Problems getting wiki named " + title)
+  }
 
   return
 }
 
-func createWiki(title string, body string) (wp WikiPage, err error) {
+func createOrUpdateWiki(title string, body string) (wp WikiPage, err error) {
   wp.Title = title
   wp.Body = strings.TrimSpace(body)
 
-  err = ioutil.WriteFile(pages + title + ".txt", []byte(body), 0600)
+  selector := bson.M{"title": wp.Title}
 
-  return
-}
-
-func pageTitle(file string) (name string, err error) {
-  if validWikiFile.MatchString(file) {
-    name = wikiTitleRegexp.FindString(file)
-  } else {
-    err = errors.New("Invalid wiki: " + file)
+  _, err = mainWiki.Upsert(selector, &wp)
+  if err != nil {
+    log.Println(err.Error())
+    err = errors.New("Problems updating or creating wiki named " + title)
   }
 
   return

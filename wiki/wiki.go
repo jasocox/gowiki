@@ -7,14 +7,19 @@ type WikiPage struct {
   Body string
 }
 
-func (gw GoWiki) PageList() (wp []WikiPage, err error) {
+func (gw GoWiki) PageList() ([]WikiPage, error) {
   return getPageList()
 }
 
-func (gw GoWiki) GetWiki(title string) (WikiPage, error) {
-  return getWiki(title)
+func (gw GoWiki) GetWiki(title string) (wp WikiPage, err error) {
+  wp, err = getWiki(title)
+  if wp.Title == "" {
+    wp.Title = title
+  }
+
+  return
 }
 
 func (gw GoWiki) CreateWiki(title string, body string) (WikiPage, error) {
-  return createWiki(title, body)
+  return createOrUpdateWiki(title, body)
 }
