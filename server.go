@@ -9,10 +9,6 @@ import (
   "gowiki/wiki"
 )
 
-type GoWikiServer struct {
-  *wiki.GoWiki
-}
-
 const (
   views = "view/"
   mainView = "main.html"
@@ -21,6 +17,7 @@ const (
 )
 
 var (
+  gowiki *wiki.GoWiki
   templates = template.Must(template.ParseFiles(views + mainView,
                                                 views + wikiView,
                                                 views + editView))
@@ -29,7 +26,7 @@ var (
   getTitleRegExp = regexp.MustCompile("[^/.]+$")
 )
 
-func (s *GoWikiServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func ServeWiki(w http.ResponseWriter, r *http.Request) {
   var (
     templateData interface{}
     templateView string
@@ -37,7 +34,7 @@ func (s *GoWikiServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
     status int
   )
 
-  log.Println("Serving request for " + r.URL.Path)
+  log.Println("ServeWiki: Serving request for " + r.URL.Path)
 
   switch {
   case validWikiUrl.MatchString(r.URL.Path) && r.Method == "GET":
@@ -45,7 +42,7 @@ func (s *GoWikiServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
     wikiTitle := getWikiTitle(r.URL.Path)
     log.Println("Request for wiki page: " + wikiTitle)
 
-    templateData, err = s.GetWiki(wikiTitle)
+    templateData, err = gowiki.GetWiki(wikiTitle)
 
     if err != nil {
       log.Println("Page doesn't exist. Creating it?")
@@ -57,26 +54,70 @@ func (s *GoWikiServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
     log.Println("Edited wiki page: " + wikiTitle)
 
     wikiBody := r.FormValue("body")
-    templateData, err = s.UpdateWiki(wikiTitle, wikiBody)
+    templateData, err = gowiki.UpdateWiki(wikiTitle, wikiBody)
 
     if err == nil {
       r.Method = "GET"
       http.Redirect(w, r, "/wiki/" + wikiTitle, http.StatusFound)
       return
     }
-  case validEditUrl.MatchString(r.URL.Path):
-    templateView = editView
-    wikiTitle := getWikiTitle(r.URL.Path)
-    log.Println("Edit page: " + wikiTitle)
-
-    templateData, err = s.GetWiki(wikiTitle)
-    if err != nil {
-      templateData, err = s.CreateWiki(wikiTitle)
-    }
-  case r.URL.Path == "/":
-    templateView = mainView
-    templateData, err = s.PageList()
   default:
+    log.Println("Invalid Path: " + r.URL.Path)
+    err = errors.New("Not Found")
+    status = http.StatusNotFound
+  }
+
+  if (err != nil) && (status == 0) {
+    http.Error(w, err.Error(), http.StatusInternalServerError)
+  } else if err != nil {
+    http.Error(w, err.Error(), status)
+  } else {
+    err = templates.ExecuteTemplate(w, templateView, templateData)
+  }
+}
+
+func ServeEdit(w http.ResponseWriter, r *http.Request) {
+  var (
+    templateData interface{}
+    templateView string
+    err error
+    status int
+  )
+
+  log.Println("ServeEdit: Serving request for " + r.URL.Path)
+
+  templateView = editView
+  wikiTitle := getWikiTitle(r.URL.Path)
+  log.Println("Edit page: " + wikiTitle)
+
+  templateData, err = gowiki.GetWiki(wikiTitle)
+  if err != nil {
+    templateData, err = gowiki.CreateWiki(wikiTitle)
+  }
+
+  if (err != nil) && (status == 0) {
+    http.Error(w, err.Error(), http.StatusInternalServerError)
+  } else if err != nil {
+    http.Error(w, err.Error(), status)
+  } else {
+    err = templates.ExecuteTemplate(w, templateView, templateData)
+  }
+}
+
+func ServeHTTP(w http.ResponseWriter, r *http.Request) {
+  var (
+    templateData interface{}
+    templateView string
+    err error
+    status int
+  )
+
+  log.Println("ServeHTTP: Serving request for " + r.URL.Path)
+
+  if r.URL.Path == "/" {
+    templateView = mainView
+    templateData, err = gowiki.PageList()
+  } else {
     log.Println("Invalid Path: " + r.URL.Path)
     err = errors.New("Not Found")
     status = http.StatusNotFound
@@ -99,8 +140,11 @@ func getWikiTitle(path string) (title string) {
 
 
 func main() {
-  s := new(GoWikiServer)
+  gowiki = new(wiki.GoWiki)
   log.Println("Starting Server...")
 
-  http.ListenAndServe(":8080", s)
+  http.HandleFunc("/wiki/", ServeWiki)
+  http.HandleFunc("/edit/", ServeEdit)
+  http.HandleFunc("/", ServeHTTP)
+  http.ListenAndServe(":8080", nil)
 }
