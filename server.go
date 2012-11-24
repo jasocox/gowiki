@@ -57,7 +57,7 @@ func (s *GoWikiServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
     log.Println("Edited wiki page: " + wikiTitle)
 
     wikiBody := r.FormValue("body")
-    templateData, err = s.CreateWiki(wikiTitle, wikiBody)
+    templateData, err = s.UpdateWiki(wikiTitle, wikiBody)
 
     if err == nil {
       r.Method = "GET"
@@ -69,7 +69,10 @@ func (s *GoWikiServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
     wikiTitle := getWikiTitle(r.URL.Path)
     log.Println("Edit page: " + wikiTitle)
 
-    templateData, _ = s.GetWiki(wikiTitle)
+    templateData, err = s.GetWiki(wikiTitle)
+    if err != nil {
+      templateData, err = s.CreateWiki(wikiTitle)
+    }
   case r.URL.Path == "/":
     templateView = mainView
     templateData, err = s.PageList()
