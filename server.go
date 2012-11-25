@@ -23,59 +23,61 @@ var (
                                                 views + editView))
 )
 
-func ServeWiki(w http.ResponseWriter, r *http.Request) {
+func ServeWikiGet(w http.ResponseWriter, r *http.Request) {
   var (
     templateData interface{}
-    templateView string
     err error
     status int
   )
 
   wikiTitle := mux.Vars(r)["title"]
-  templateView = wikiView
 
-  log.Println("ServeWiki: Serving request for " + r.URL.Path)
+  log.Println("ServeWikiGet: Serving request for " + r.URL.Path)
+  log.Println("Request for wiki page: " + wikiTitle)
 
-  switch {
-  case r.Method == "GET":
-    log.Println("Request for wiki page: " + wikiTitle)
+  templateData, err = gowiki.GetWiki(wikiTitle)
 
-    templateData, err = gowiki.GetWiki(wikiTitle)
-
-    if err != nil {
-      log.Println("Page doesn't exist. Creating it?")
-      http.Redirect(w, r, "/edit/" + wikiTitle, http.StatusFound)
-    }
-  case r.Method == "POST":
-    log.Println("Edited wiki page: " + wikiTitle)
-
-    wikiBody := r.FormValue("body")
-    templateData, err = gowiki.UpdateWiki(wikiTitle, wikiBody)
-
-    if err == nil {
-      r.Method = "GET"
-      http.Redirect(w, r, "/wiki/" + wikiTitle, http.StatusFound)
-      return
-    }
-  default:
-    log.Println("Invalid Path: " + r.URL.Path)
-    err = errors.New("Not Found")
-    status = http.StatusNotFound
+  if err != nil {
+    log.Println("Page doesn't exist. Creating it?")
+    http.Redirect(w, r, "/edit/" + wikiTitle, http.StatusFound)
   }
 
-  handleErrorOrTemplate(w, templateData, templateView, err, status)
+  handleErrorOrTemplate(w, templateData, wikiView, err, status)
+}
+
+func ServeWikiPost(w http.ResponseWriter, r *http.Request) {
+  var (
+    templateData interface{}
+    err error
+    status int
+  )
+
+  wikiTitle := mux.Vars(r)["title"]
+
+  log.Println("ServeWikiPost: Serving request for " + r.URL.Path)
+
+  log.Println("Edited wiki page: " + wikiTitle)
+
+  wikiBody := r.FormValue("body")
+  templateData, err = gowiki.UpdateWiki(wikiTitle, wikiBody)
+
+  if err == nil {
+    r.Method = "GET"
+    http.Redirect(w, r, "/wiki/" + wikiTitle, http.StatusFound)
+    return
+  }
+
+  handleErrorOrTemplate(w, templateData, wikiView, err, status)
 }
 
 func ServeEdit(w http.ResponseWriter, r *http.Request) {
   var (
     templateData interface{}
-    templateView string
     err error
     status int
   )
 
   wikiTitle := mux.Vars(r)["title"]
-  templateView = editView
 
   log.Println("ServeEdit: Serving request for " + r.URL.Path)
 
@@ -84,13 +86,12 @@ func ServeEdit(w http.ResponseWriter, r *http.Request) {
     templateData, err = gowiki.CreateWiki(wikiTitle)
   }
 
-  handleErrorOrTemplate(w, templateData, templateView, err, status)
+  handleErrorOrTemplate(w, templateData, editView, err, status)
 }
 
 func ServeHTTP(w http.ResponseWriter, r *http.Request) {
   var (
     templateData interface{}
-    templateView string
     err error
     status int
   )
@@ -98,7 +99,6 @@ func ServeHTTP(w http.ResponseWriter, r *http.Request) {
   log.Println("ServeHTTP: Serving request for " + r.URL.Path)
 
   if r.URL.Path == "/" {
-    templateView = mainView
     templateData, err = gowiki.PageList()
   } else {
     log.Println("Invalid Path: " + r.URL.Path)
@@ -106,7 +106,7 @@ func ServeHTTP(w http.ResponseWriter, r *http.Request) {
     status = http.StatusNotFound
   }
 
-  handleErrorOrTemplate(w, templateData, templateView, err, status)
+  handleErrorOrTemplate(w, templateData, mainView, err, status)
 }
 
 func handleErrorOrTemplate(w http.ResponseWriter,
@@ -128,7 +128,8 @@ func main() {
   log.Println("Starting Server...")
 
   r := mux.NewRouter()
-  r.HandleFunc("/wiki/{title:[^/.]+}", ServeWiki)
+  r.HandleFunc("/wiki/{title:[^/.]+}", ServeWikiGet).Methods("GET")
+  r.HandleFunc("/wiki/{title:[^/.]+}", ServeWikiPost).Methods("POST")
   r.HandleFunc("/edit/{title:[^/.]+}", ServeEdit)
   r.HandleFunc("/", ServeHTTP)
 
