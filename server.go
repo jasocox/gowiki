@@ -1,12 +1,12 @@
 package main
 
 import (
-  "regexp"
   "log"
   "errors"
   "net/http"
   "html/template"
   "gowiki/wiki"
+  "github.com/gorilla/mux"
 )
 
 const (
@@ -21,9 +21,6 @@ var (
   templates = template.Must(template.ParseFiles(views + mainView,
                                                 views + wikiView,
                                                 views + editView))
-  validWikiUrl = regexp.MustCompile("^/wiki/[^/.]+$")
-  validEditUrl = regexp.MustCompile("^/edit/[^/.]+$")
-  getTitleRegExp = regexp.MustCompile("[^/.]+$")
 )
 
 func ServeWiki(w http.ResponseWriter, r *http.Request) {
@@ -34,12 +31,13 @@ func ServeWiki(w http.ResponseWriter, r *http.Request) {
     status int
   )
 
+  wikiTitle := mux.Vars(r)["title"]
+  templateView = wikiView
+
   log.Println("ServeWiki: Serving request for " + r.URL.Path)
 
   switch {
-  case validWikiUrl.MatchString(r.URL.Path) && r.Method == "GET":
-    templateView = wikiView
-    wikiTitle := getWikiTitle(r.URL.Path)
+  case r.Method == "GET":
     log.Println("Request for wiki page: " + wikiTitle)
 
     templateData, err = gowiki.GetWiki(wikiTitle)
@@ -48,9 +46,7 @@ func ServeWiki(w http.ResponseWriter, r *http.Request) {
       log.Println("Page doesn't exist. Creating it?")
       http.Redirect(w, r, "/edit/" + wikiTitle, http.StatusFound)
     }
-  case validWikiUrl.MatchString(r.URL.Path) && r.Method == "POST":
-    templateView = wikiView
-    wikiTitle := getWikiTitle(r.URL.Path)
+  case r.Method == "POST":
     log.Println("Edited wiki page: " + wikiTitle)
 
     wikiBody := r.FormValue("body")
@@ -78,11 +74,10 @@ func ServeEdit(w http.ResponseWriter, r *http.Request) {
     status int
   )
 
-  log.Println("ServeEdit: Serving request for " + r.URL.Path)
-
+  wikiTitle := mux.Vars(r)["title"]
   templateView = editView
-  wikiTitle := getWikiTitle(r.URL.Path)
-  log.Println("Edit page: " + wikiTitle)
+
+  log.Println("ServeEdit: Serving request for " + r.URL.Path)
 
   templateData, err = gowiki.GetWiki(wikiTitle)
   if err != nil {
@@ -114,12 +109,6 @@ func ServeHTTP(w http.ResponseWriter, r *http.Request) {
   handleErrorOrTemplate(w, templateData, templateView, err, status)
 }
 
-func getWikiTitle(path string) (title string) {
-  title = getTitleRegExp.FindString(path)
-
-  return
-}
-
 func handleErrorOrTemplate(w http.ResponseWriter,
                            templateData interface{},
                            templateView string,
@@ -138,8 +127,10 @@ func main() {
   gowiki = new(wiki.GoWiki)
   log.Println("Starting Server...")
 
-  http.HandleFunc("/wiki/", ServeWiki)
-  http.HandleFunc("/edit/", ServeEdit)
-  http.HandleFunc("/", ServeHTTP)
-  http.ListenAndServe(":8080", nil)
+  r := mux.NewRouter()
+  r.HandleFunc("/wiki/{title:[^/.]+}", ServeWiki)
+  r.HandleFunc("/edit/{title:[^/.]+}", ServeEdit)
+  r.HandleFunc("/", ServeHTTP)
+
+  http.ListenAndServe(":8080", r)
 }
