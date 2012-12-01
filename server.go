@@ -32,17 +32,15 @@ func ServeWikiGet(w http.ResponseWriter, r *http.Request) {
 
   wikiTitle := mux.Vars(r)["title"]
 
-  log.Println("ServeWikiGet: Serving request for " + r.URL.Path)
-  log.Println("Request for wiki page: " + wikiTitle)
+  log.Println("ServeWikiGet: Request path: " + r.URL.Path + " Wiki page: " + wikiTitle)
 
   templateData, err = gowiki.GetWiki(wikiTitle)
-
   if err != nil {
-    log.Println("Page doesn't exist. Creating it?")
+    log.Println("Page doesn't exist. Creating it")
     http.Redirect(w, r, "/edit/" + wikiTitle, http.StatusFound)
   }
 
-  handleErrorOrTemplate(w, templateData, wikiView, err, status)
+  rendorTemplateOrError(w, templateData, wikiView, err, status)
 }
 
 func ServeWikiPost(w http.ResponseWriter, r *http.Request) {
@@ -54,20 +52,17 @@ func ServeWikiPost(w http.ResponseWriter, r *http.Request) {
 
   wikiTitle := mux.Vars(r)["title"]
 
-  log.Println("ServeWikiPost: Serving request for " + r.URL.Path)
-
-  log.Println("Edited wiki page: " + wikiTitle)
+  log.Println("ServeWikiPost: Request path: " + r.URL.Path + " Wiki page: " + wikiTitle)
 
   wikiBody := r.FormValue("body")
   templateData, err = gowiki.UpdateWiki(wikiTitle, wikiBody)
-
   if err == nil {
     r.Method = "GET"
     http.Redirect(w, r, "/wiki/" + wikiTitle, http.StatusFound)
     return
   }
 
-  handleErrorOrTemplate(w, templateData, wikiView, err, status)
+  rendorTemplateOrError(w, templateData, wikiView, err, status)
 }
 
 func ServeEdit(w http.ResponseWriter, r *http.Request) {
@@ -79,14 +74,14 @@ func ServeEdit(w http.ResponseWriter, r *http.Request) {
 
   wikiTitle := mux.Vars(r)["title"]
 
-  log.Println("ServeEdit: Serving request for " + r.URL.Path)
+  log.Println("ServeEdit: Request path: " + r.URL.Path + " Wiki page: " + wikiTitle)
 
   templateData, err = gowiki.GetWiki(wikiTitle)
   if err != nil {
     templateData, err = gowiki.CreateWiki(wikiTitle)
   }
 
-  handleErrorOrTemplate(w, templateData, editView, err, status)
+  rendorTemplateOrError(w, templateData, editView, err, status)
 }
 
 func ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -96,7 +91,7 @@ func ServeHTTP(w http.ResponseWriter, r *http.Request) {
     status int
   )
 
-  log.Println("ServeHTTP: Serving request for " + r.URL.Path)
+  log.Println("ServeHTTP: Request path: " + r.URL.Path)
 
   if r.URL.Path == "/" {
     templateData, err = gowiki.PageList()
@@ -106,10 +101,10 @@ func ServeHTTP(w http.ResponseWriter, r *http.Request) {
     status = http.StatusNotFound
   }
 
-  handleErrorOrTemplate(w, templateData, mainView, err, status)
+  rendorTemplateOrError(w, templateData, mainView, err, status)
 }
 
-func handleErrorOrTemplate(w http.ResponseWriter,
+func rendorTemplateOrError(w http.ResponseWriter,
                            templateData interface{},
                            templateView string,
                            err error,
